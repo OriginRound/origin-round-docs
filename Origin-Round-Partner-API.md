@@ -23,6 +23,7 @@ if (!originResponse.data.is_valid) {
 }
 
 // 3. Handle First-Time vs. Returning Users
+// Note: Origin Round will return a 200 OK here, NOT an error. It is up to you to reject the double-spend based on this flag.
 if (originResponse.data.already_in_use) {
     //  SECURITY: This code is valid, but was consumed in the past.
     // If your app binds codes to specific accounts, you must check your database here:
@@ -49,6 +50,8 @@ Origin Round uses two different strings to identify an asset. It is critical to 
 * **Validation:** Contains uppercase letters and numbers (excludes `0, 1, I, O` to prevent typos). You can validate the shape on your frontend before sending it to your backend:
   `const isValid = /^[A-Z2-9]{5}(-[A-Z2-9]{5}){4}$/.test(input);`
 
+> **💡 UX Tip:** Run this regex validation on your frontend *before* calling our API. It prevents unnecessary network requests and allows you to instantly warn the user if they accidentally pasted a code containing a `0` or an `O`.
+
 ### The Public Reference (`ref`)
 **Format:** 14 Characters `OR-XXXX-XXXXXX` (e.g., `OR-A1B2-C3D4E5`)
 **Intent:** Internal DB Storage & Background Syncs.
@@ -66,6 +69,9 @@ You do **not** need to calculate time. Simply cache the `expires_at` date in you
 
 * **When they auto-renew:** Origin Round handles the payment. The next time you verify that user's `code` or `ref`, the `expires_at` date will automatically be pushed forward.
 * **If they cancel:** `billing_status` will change to `"CANCELED"`, but `is_valid` will remain `true` until their current paid period naturally hits the `expires_at` date.
+
+### Handling One-Time Items (Quantity/Access)
+If the user purchased a one-time item (like a pack of coins or a capacity boost), check `data.offer.value` in the success payload. This tells your backend exactly how many items to grant. You can safely map this integer directly to your database update queries.
 
 ---
 
